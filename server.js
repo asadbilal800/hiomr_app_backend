@@ -41,8 +41,8 @@ app.get('/checkEmailDB', async (req, res) => {
     response = new BaseReponse(false,true,'Email is empty');
   }
   else{
-  let isEmailFound = await checkEmailExists(email)
-   response = new BaseReponse(isEmailFound,true,isEmailFound ? 'Email found': 'Email not found');
+  let emailData = await checkEmailExists(email)
+   response = new BaseReponse(emailData,true,emailData?.length ? 'Email found': 'Email not found');
   }
   res.json(response);
 });
@@ -70,11 +70,25 @@ const pool = await mysql.createPool({
   database: 'production_image_omr',
 });
  conn = await pool.getConnection();
+ console.log('connection secured.')
 }
 
 async function checkEmailExists(email) {
-  const [result] = await conn.query(`SELECT * from Emails where email='${email}'`);
-  return result.length ? true : false;
+    // Query the database to check if the email exists
+    const [rows] = await conn.execute('SELECT practiceid FROM Emails WHERE email = ?', [email]);
+    if (rows.length > 0) {
+      const practiceId = rows[0].practiceid;
+
+      // Query to fetch data related to the practice
+      const [practiceRows] = await conn.execute(
+        `SELECT Doctors.doctorid, Doctors.firstname, Doctors.lastname, Practices.practicename, Practices.practiceid, Practices.payment, Practices.billingemail
+         FROM Practices
+         INNER JOIN Doctors ON Doctors.practiceid = Practices.practiceid
+         WHERE Practices.practiceid = ?`, [practiceId]);
+      // Return the fetched data
+      return practiceRows;
+    }
+    else return null;
 }
 
 
