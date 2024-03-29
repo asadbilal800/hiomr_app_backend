@@ -4,6 +4,8 @@ const cors = require('cors');
 const BaseReponse = require('./shared/BaseResponse');
 const mysql = require('mysql2/promise');
 const { Connector } = require('@google-cloud/cloud-sql-connector');
+const bodyParser = require('body-parser');
+
 
 
 // Creating an instance of Express
@@ -14,6 +16,8 @@ app.use(cors({
   origin: 'http://localhost:4200',
   methods: 'POST,GET,PUT,OPTIONS,DELETE'
 }));
+app.use(bodyParser.json());
+
 
 
 
@@ -47,8 +51,13 @@ app.get('/checkEmailDB', async (req, res) => {
   res.json(response);
 });
 
-
-
+//check match practice from db
+app.post('/checkMatchPractice', async (req, res) => {
+  let payload = req.body;
+  let data = await checkMatchPracticeLogic(payload);
+  let response = new BaseReponse(data,true,'Success');
+  res.json(response);
+});
 
 
 
@@ -89,6 +98,30 @@ async function checkEmailExists(email) {
       return practiceRows;
     }
     else return null;
+}
+
+async function checkMatchPracticeLogic(payload) {
+    const query = "SELECT practiceid FROM Practices WHERE practicename = ? AND state = ?";
+    const [resultRows] = await conn.execute(query, [payload.practiceName, payload.stateName]);
+    if(resultRows?.length){
+        let practiceid = resultRows[0].practiceId;
+        if(practiceid){
+        const insertQuery = 'INSERT INTO Emails (emailid, practiceid, email) VALUES (?, ?, ?)';
+        await conn.execute(insertQuery, [payload.emailId, practiceid, payload.emailName]);
+    }
+
+  let resulantData = null;
+  if(practiceid){
+    const query = `
+    SELECT Doctors.doctorid, Doctors.firstname, Doctors.lastname, 
+           Practices.practicename, Practices.practiceid, Practices.payment, Practices.billingemail 
+    FROM Practices 
+    INNER JOIN Doctors ON Doctors.practiceid = Practices.practiceid 
+    WHERE Practices.practiceid = ?`;
+  resulantData = await conn.execute(query, [practiceid]);
+  }
+  return resulantData;
+  }
 }
 
 
