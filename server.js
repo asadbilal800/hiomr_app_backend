@@ -104,7 +104,7 @@ async function checkMatchPracticeLogic(payload) {
     const query = "SELECT practiceid FROM Practices WHERE practicename = ? AND state = ?";
     const [resultRows] = await conn.execute(query, [payload.practiceName, payload.stateName]);
     if(resultRows?.length){
-        let practiceid = resultRows[0].practiceId;
+        let practiceid = resultRows[0].practiceid;
         if(practiceid){
         const insertQuery = 'INSERT INTO Emails (emailid, practiceid, email) VALUES (?, ?, ?)';
         await conn.execute(insertQuery, [payload.emailId, practiceid, payload.emailName]);
@@ -120,7 +120,7 @@ async function checkMatchPracticeLogic(payload) {
     WHERE Practices.practiceid = ?`;
   resulantData = await conn.execute(query, [practiceid]);
   }
-  return resulantData;
+  return resulantData[0];
   }
 }
 
