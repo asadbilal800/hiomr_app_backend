@@ -5,6 +5,7 @@ const BaseReponse = require('./shared/BaseResponse');
 const mysql = require('mysql2/promise');
 const { Connector } = require('@google-cloud/cloud-sql-connector');
 const bodyParser = require('body-parser');
+const {generateUUID} =  require('./shared')
 
 
 
@@ -57,6 +58,15 @@ app.post('/checkMatchPractice', async (req, res) => {
   let data = await checkMatchPracticeLogic(payload);
   let response = new BaseReponse(data,true,'Success');
   res.json(response);
+});
+
+//check match practice from db
+app.post('/saveRegistration', async (req, res) => {
+  let payload = req.body;
+  console.log(payload)
+  // let data = await saveRegistration(payload);
+  // let response = new BaseReponse(data,true,'Success');
+  // res.json(response);
 });
 
 
@@ -122,6 +132,58 @@ async function checkMatchPracticeLogic(payload) {
   }
   return resulantData[0];
   }
+}
+
+async function saveRegistration(payload) {
+  let doctorId = generateUUID();
+  let practiceid = generateUUID();
+  insertIdIntoTable('Practices','practiceid',practiceid)
+
+  const insertQueryForDoctors = 'INSERT INTO Doctors ' +
+    '(doctorid,firstname,lastname,specialtyid,cbctid,practiceid,doctoremail,registration) values (?, ?, ?, ?, ?, ?, ?, CURDATE())';
+  await conn.execute(insertQueryForDoctors, [doctorId, payload.dFirstName, payload.dLastName, payload.specialty, payload.cbct, payload.practiceid, payload.emailId]);
+  
+
+  let emailId = generateUUID();
+  const insertQueryForEmail = 'INSERT INTO Emails ' +'(emailid,practiceid,email) values (?, ?, ?)';
+  await conn.execute(insertQueryForEmail, [emailId, practiceid, payload.email]);
+
+  const updateQueryForEmail = 'UPDATE Practices SET ' +
+  'practicename = ?, mailingaddress = ?, state = ?, city = ?, zip = ?, ' +
+  'phone = ?, practiceemail = ?, billingemail = ?, cbctid = ?, website = ?, address2 = ?, registration = CURDATE() ' +
+  'WHERE practiceid = ?';
+  const values = [
+    payload.practicename,
+    payload.mailingaddress,
+    payload.state,
+    payload.city,
+    payload.zip,
+    payload.phone,
+    payload.practiceemail,
+    payload.billingemail,
+    payload.cbctid,
+    payload.website,
+    payload.address2,
+    practiceid
+  ];
+    
+  try {
+    await conn.execute(updateQueryForEmail, values);
+    console.log('practice updated successfully!');
+  } catch (error) {
+    console.error('Error updating practice:', error);
+  }
+}
+
+async function insertIdIntoTable(tableName, columnName, value) {
+  try {
+    const insertQueryForEmail = 'INSERT INTO ' + tableName + ' (' + columnName + ') VALUES (?)';
+    await conn.execute(insertQueryForEmail, [value]);
+  }
+  catch(err){
+    console.log(err);
+  }
+
 }
 
 
