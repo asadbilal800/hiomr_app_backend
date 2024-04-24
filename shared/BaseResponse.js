@@ -1,7 +1,7 @@
 class BaseResponse {
     constructor(response,isSuccesful,message) {
         this.response = response;
-        this.isSuccesful = isSuccesful;
+        this.IsSuccessful = isSuccesful;
         this.message = message
     }
 }

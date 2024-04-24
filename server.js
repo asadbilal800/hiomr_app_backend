@@ -64,9 +64,14 @@ app.post('/checkMatchPractice', async (req, res) => {
 app.post('/saveRegistration', async (req, res) => {
   let payload = req.body;
   console.log(payload)
-  // let data = await saveRegistration(payload);
-  // let response = new BaseReponse(data,true,'Success');
-  // res.json(response);
+  let data = await saveRegistration(payload);
+  let response;
+  if(data)
+  response = new BaseReponse(null,true,'Success');
+  else 
+  response = new BaseReponse(null,false,'Failed');
+
+  res.json(response);
 });
 
 
@@ -137,32 +142,42 @@ async function checkMatchPracticeLogic(payload) {
 async function saveRegistration(payload) {
   let doctorId = generateUUID();
   let practiceid = generateUUID();
+  let emailId = generateUUID();
   insertIdIntoTable('Practices','practiceid',practiceid)
 
   const insertQueryForDoctors = 'INSERT INTO Doctors ' +
     '(doctorid,firstname,lastname,specialtyid,cbctid,practiceid,doctoremail,registration) values (?, ?, ?, ?, ?, ?, ?, CURDATE())';
-  await conn.execute(insertQueryForDoctors, [doctorId, payload.dFirstName, payload.dLastName, payload.specialty, payload.cbct, payload.practiceid, payload.emailId]);
+    try{
+  await conn.execute(insertQueryForDoctors, [doctorId, payload.dFirstName, payload.dLastName, payload.specialty, payload.cbct, practiceid, payload.emailId]);
+    }
+    catch(e){
+      console.log(e);
+    }
   
 
-  let emailId = generateUUID();
   const insertQueryForEmail = 'INSERT INTO Emails ' +'(emailid,practiceid,email) values (?, ?, ?)';
+  try {
   await conn.execute(insertQueryForEmail, [emailId, practiceid, payload.email]);
+  }
+  catch(e){
+    console.log(e);
+  }
 
   const updateQueryForEmail = 'UPDATE Practices SET ' +
   'practicename = ?, mailingaddress = ?, state = ?, city = ?, zip = ?, ' +
   'phone = ?, practiceemail = ?, billingemail = ?, cbctid = ?, website = ?, address2 = ?, registration = CURDATE() ' +
   'WHERE practiceid = ?';
   const values = [
-    payload.practicename,
-    payload.mailingaddress,
+    payload.practice,
+    payload.street,
     payload.state,
     payload.city,
     payload.zip,
-    payload.phone,
-    payload.practiceemail,
-    payload.billingemail,
-    payload.cbctid,
-    payload.website,
+    payload.practisePhoneNo,
+    payload.emailId,
+    payload.billEmail,
+    payload.cbct,
+    (payload?.website) ? payload.website : '',
     payload.address2,
     practiceid
   ];
@@ -173,6 +188,7 @@ async function saveRegistration(payload) {
   } catch (error) {
     console.error('Error updating practice:', error);
   }
+  return true
 }
 
 async function insertIdIntoTable(tableName, columnName, value) {
