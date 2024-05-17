@@ -74,6 +74,20 @@ app.post('/saveRegistration', async (req, res) => {
   res.json(response);
 });
 
+//save patient info 
+app.post('/patientInfo', async (req, res) => {
+  let payload = req.body;
+  console.log(payload);
+  // let data = await savePatient(payload);
+  // let response;
+  // if(data)
+  // response = new BaseReponse(null,true,'Success');
+  // else 
+  // response = new BaseReponse(null,false,'Failed');
+
+  // res.json(response);
+});
+
 
 
 
@@ -199,6 +213,17 @@ async function insertIdIntoTable(tableName, columnName, value) {
   catch(err){
     console.log(err);
   }
+
+  async function savePatient(payload) {
+    try {
+      const insertQueryForEmail = 'INSERT INTO ' + tableName + ' (' + columnName + ') VALUES (?)';
+      await conn.execute(insertQueryForEmail, [value]);
+    }
+    catch(err){
+      console.log(err);
+    }
+
+}
 
 }
 
