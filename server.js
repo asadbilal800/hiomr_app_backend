@@ -78,14 +78,14 @@ app.post('/saveRegistration', async (req, res) => {
 app.post('/patientInfo', async (req, res) => {
   let payload = req.body;
   console.log(payload);
-  // let data = await savePatient(payload);
-  // let response;
-  // if(data)
-  // response = new BaseReponse(null,true,'Success');
-  // else 
-  // response = new BaseReponse(null,false,'Failed');
+  let data = await savePatient(payload);
+  let response;
+  if(data)
+  response = new BaseReponse(null,true,'Success');
+  else 
+  response = new BaseReponse(null,false,'Failed');
 
-  // res.json(response);
+  res.json(response);
 });
 
 
@@ -213,18 +213,70 @@ async function insertIdIntoTable(tableName, columnName, value) {
   catch(err){
     console.log(err);
   }
+}
 
   async function savePatient(payload) {
-    try {
-      const insertQueryForEmail = 'INSERT INTO ' + tableName + ' (' + columnName + ') VALUES (?)';
-      await conn.execute(insertQueryForEmail, [value]);
-    }
-    catch(err){
-      console.log(err);
-    }
+
+    let patientId = generateUUID();
+    insertIdIntoTable('Patients','patientid',patientId)
+
+  //patient data 
+  const updateQueryForPatient = 'UPDATE Patients ' +
+  'SET doctorid=?, firstname=?, lastname=?, internalid=?, dob=?, sex=? ' +
+  'WHERE patientid=?';
+  const valuesForPatient = [
+    payload.doctorId,
+    payload.firstName,
+    payload.lastName,
+    payload.internalId,
+    payload.birthDate,
+    payload.sexType,
+    patientId
+  ];
+    
+  try {
+    await conn.execute(updateQueryForPatient, valuesForPatient);
+    console.log('patient info updated successfully!');
+  } catch (error) {
+    console.error('Error updating practice:', error);
+  }
+
+   //patient case data
+stmt = conn.prepareStatement("UPDATE Cases SET " + 
+    "patientid = ?, " +
+    "patientage = ?, " +
+    "uploadperson = ?, " +
+    "radiologistid = ?, " +
+    "rushcase = ?, " +
+    "statcase = ?, " +
+    "caseemail = ?, " +
+    "files = ?, " +
+    "submitted = CURRENT_TIMESTAMP() " +
+    "WHERE caseid = ?");
+   stmt.setString(1, patient.patientId);
+   stmt.setString(2, patient.patientage);
+   stmt.setString(3, patient.uploadPersonName);
+   stmt.setString(4, patient.radiologistId);
+   stmt.setString(5, patient.rush);
+   stmt.setString(6, patient.stat);
+   stmt.setString(7, patient.caseEmail);
+   stmt.setString(8, patient.casesFile);
+   stmt.setString(9, patient.caseId); // Set caseid for the WHERE clause
+   stmt.execute();
+
+
+   //pata reason data
+   patient.cases.forEach((singleCase,index) => {
+    let reasonCaseId = generateUUID();
+    let stmt = conn.prepareStatement('INSERT INTO WhySubmitted ' + '(reasonid,caseid,reason,patdocnotes) values (?,?,?,?)');
+    stmt.setString(1, reasonCaseId);
+    stmt.setString(2, patient.caseId);
+    stmt.setString(3, singleCase);
+    stmt.setString(4, patient.casesDesc[index]);
+    stmt.execute();
+   });
 
 }
 
-}
 
 
