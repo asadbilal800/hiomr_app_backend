@@ -63,7 +63,6 @@ app.post('/checkMatchPractice', async (req, res) => {
 //check match practice from db
 app.post('/saveRegistration', async (req, res) => {
   let payload = req.body;
-  console.log(payload)
   let data = await saveRegistration(payload);
   let response;
   if(data)
@@ -154,7 +153,6 @@ async function checkMatchPracticeLogic(payload) {
 }
 
 async function saveRegistration(payload) {
-  let doctorId = generateUUID();
   let practiceid = generateUUID();
   let emailId = generateUUID();
   insertIdIntoTable('Practices','practiceid',practiceid)
@@ -162,7 +160,7 @@ async function saveRegistration(payload) {
   const insertQueryForDoctors = 'INSERT INTO Doctors ' +
     '(doctorid,firstname,lastname,specialtyid,cbctid,practiceid,doctoremail,registration) values (?, ?, ?, ?, ?, ?, ?, CURDATE())';
     try{
-  await conn.execute(insertQueryForDoctors, [doctorId, payload.dFirstName, payload.dLastName, payload.specialty, payload.cbct, practiceid, payload.emailId]);
+  await conn.execute(insertQueryForDoctors, [payload.doctorId, payload.dFirstName, payload.dLastName, payload.specialty, payload.cbct, practiceid, payload.emailId]);
     }
     catch(e){
       console.log(e);
