@@ -289,8 +289,8 @@ async function insertIdIntoTable(tableName, columnName, value) {
   });
 
   reasonPayload.forEach(reason => {
-     const updateQueryForReasons = "UPDATE WhySubmitted SET " + "reason = ?, " + "patdocnotes = ?," +"WHERE caseid = ?"
-     const valuesForReasons = [reason.code,reason.desc,reason.Id];
+     const updateQueryForReasons = "UPDATE WhySubmitted SET " + "caseid = ?, " + "reason = ?, " + "patdocnotes = ?," +"WHERE reasonid = ?"
+     const valuesForReasons = [ caseId,reason.code,reason.desc,reason.Id];
      try {
        conn.execute(updateQueryForReasons, valuesForReasons);
       console.log('reason info updated successfully!');
