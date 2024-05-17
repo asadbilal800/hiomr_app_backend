@@ -218,19 +218,30 @@ async function insertIdIntoTable(tableName, columnName, value) {
   async function savePatient(payload) {
 
     let patientId = generateUUID();
+    let caseId = generateUUID();
     insertIdIntoTable('Patients','patientid',patientId)
+    insertIdIntoTable('Cases','caseid',caseId);
+    let patientPayload = payload.patientInfo;
+    let reasonPayload = payload.reasonInfo;
+    let radiologistPayload = payload.radiologistInfo;
+    let emailRelatedPayload = payload.emailRelatedData
+    //patient age calculation
+    let ageDifMs = Date.now() - new Date(patientPayload.birthDate)
+    let ageDate = new Date(ageDifMs)
+    let patientage = Math.abs(ageDate.getUTCFullYear() - 1970);
+
 
   //patient data 
   const updateQueryForPatient = 'UPDATE Patients ' +
   'SET doctorid=?, firstname=?, lastname=?, internalid=?, dob=?, sex=? ' +
   'WHERE patientid=?';
   const valuesForPatient = [
-    payload.doctorId,
-    payload.firstName,
-    payload.lastName,
-    payload.internalId,
-    payload.birthDate,
-    payload.sexType,
+    patientPayload.doctorId,
+    patientPayload.firstName,
+    patientPayload.lastName,
+    patientPayload.internalId,
+    patientPayload.birthDate,
+    patientPayload.sexType,
     patientId
   ];
     
@@ -241,40 +252,53 @@ async function insertIdIntoTable(tableName, columnName, value) {
     console.error('Error updating practice:', error);
   }
 
-   //patient case data
-stmt = conn.prepareStatement("UPDATE Cases SET " + 
-    "patientid = ?, " +
-    "patientage = ?, " +
-    "uploadperson = ?, " +
-    "radiologistid = ?, " +
-    "rushcase = ?, " +
-    "statcase = ?, " +
-    "caseemail = ?, " +
-    "files = ?, " +
-    "submitted = CURRENT_TIMESTAMP() " +
-    "WHERE caseid = ?");
-   stmt.setString(1, patient.patientId);
-   stmt.setString(2, patient.patientage);
-   stmt.setString(3, patient.uploadPersonName);
-   stmt.setString(4, patient.radiologistId);
-   stmt.setString(5, patient.rush);
-   stmt.setString(6, patient.stat);
-   stmt.setString(7, patient.caseEmail);
-   stmt.setString(8, patient.casesFile);
-   stmt.setString(9, patient.caseId); // Set caseid for the WHERE clause
-   stmt.execute();
+   // radiologist data
+   const updateQueryForRadiologist = "UPDATE Cases SET " + 
+   "patientid = ?, " +
+   "patientage = ?, " +
+   "radiologistid = ?, " +
+   "rushcase = ?, " +
+   "statcase = ?, " +
+   "uploadperson = ?, " +
+   "caseemail = ?, " +
+   "submitted = CURRENT_TIMESTAMP() " +
+   "WHERE caseid = ?";
+   const valuesForRadiologist = [
+     patientId,
+     patientage,
+     radiologistPayload.radioLogist,
+     radiologistPayload.rush,
+     radiologistPayload.stat,
+     emailRelatedPayload.name,
+     emailRelatedPayload.email,
+     caseId
+   ];
+
+   try {
+    await conn.execute(updateQueryForRadiologist, valuesForRadiologist);
+    console.log('cases info updated successfully!');
+  } catch (error) {
+    console.error('Error updating cases:', error);
+  }
 
 
-   //pata reason data
-   patient.cases.forEach((singleCase,index) => {
-    let reasonCaseId = generateUUID();
-    let stmt = conn.prepareStatement('INSERT INTO WhySubmitted ' + '(reasonid,caseid,reason,patdocnotes) values (?,?,?,?)');
-    stmt.setString(1, reasonCaseId);
-    stmt.setString(2, patient.caseId);
-    stmt.setString(3, singleCase);
-    stmt.setString(4, patient.casesDesc[index]);
-    stmt.execute();
-   });
+  reasonPayload.forEach(reason => {
+    let reasonId = generateUUID();
+    reason.Id = reasonId;
+    insertIdIntoTable('WhySubmitted','reasonid',reasonId)
+  });
+
+  reasonPayload.forEach(reason => {
+     const updateQueryForReasons = "UPDATE WhySubmitted SET " + "reason = ?, " + "patdocnotes = ?," +"WHERE caseid = ?"
+     const valuesForReasons = [reason.code,reason.desc,reason.Id];
+     try {
+       conn.execute(updateQueryForReasons, valuesForReasons);
+      console.log('reason info updated successfully!');
+    } catch (error) {
+      console.error('Error updating reason:', error);
+    }
+    });
+
 
 }
 
