@@ -80,7 +80,7 @@ app.post('/patientInfo', async (req, res) => {
   let data = await savePatient(payload);
   let response;
   if(data)
-  response = new BaseReponse(null,true,'Success');
+  response = new BaseReponse(data,true,'Success');
   else 
   response = new BaseReponse(null,false,'Failed');
 
@@ -297,6 +297,13 @@ async function insertIdIntoTable(tableName, columnName, value) {
     }
     });
 
+    const [patientRows] = await conn.execute('SELECT Patients.firstname, Patients.firstname,Patients.internalid, Cases.uploadperson,Cases.caseemail,Cases.submitted FROM Patients INNER JOIN Cases ON Patients.patientid = Cases.patientid WHERE Patients.patientid = ?',
+     [patientId]);
+
+     const [reasonRows] = await conn.execute('SELECT WhySubmitted.patdocnotes,WhySubmitted.reason FROM WhySubmitted WHERE WhySubmitted.caseid = ?',
+     [caseId]);
+
+     return {patient: patientRows, reasons: reasonRows};
 
 }
 
