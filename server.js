@@ -297,13 +297,17 @@ async function insertIdIntoTable(tableName, columnName, value) {
     }
     });
 
-    const [patientRows] = await conn.execute('SELECT Patients.firstname, Patients.firstname,Patients.internalid, Cases.uploadperson,Cases.caseemail,Cases.submitted FROM Patients INNER JOIN Cases ON Patients.patientid = Cases.patientid WHERE Patients.patientid = ?',
+    const [patientDoctorData] = await conn.execute('SELECT Patients.firstname, Patients.lastname, Patients.internalid, Patients.dob, Patients.sex, Cases.uploadperson, Cases.caseemail, Cases.submitted, Doctors.firstname AS doctorfirstname, Doctors.lastname AS doctorlastname FROM Patients INNER JOIN Cases ON Patients.patientid = Cases.patientid INNER JOIN Doctors ON Patients.doctorid = Doctors.doctorid WHERE Patients.patientid = "18978e83-7b54-4738-98b4-02c83884ac41"',
      [patientId]);
 
-     const [reasonRows] = await conn.execute('SELECT WhySubmitted.patdocnotes,WhySubmitted.reason FROM WhySubmitted WHERE WhySubmitted.caseid = ?',
+     const [reasonData] = await conn.execute('SELECT WhySubmitted.patdocnotes,WhySubmitted.reason FROM WhySubmitted WHERE WhySubmitted.caseid = ?',
      [caseId]);
 
-     return {patient: patientRows, reasons: reasonRows};
+     const combinedData = {
+      patientDoctorData,
+      reasonData
+    };
+        return { data: combinedData };
 
 }
 
