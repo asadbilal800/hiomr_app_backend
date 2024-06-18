@@ -7,6 +7,7 @@ const { Connector } = require('@google-cloud/cloud-sql-connector');
 const bodyParser = require('body-parser');
 const {generateUUID} =  require('./shared');
 const stripe = require('stripe')('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');
+const axios = require('axios');
 
 
 
@@ -87,6 +88,13 @@ app.post('/patientInfo', async (req, res) => {
   response = new BaseReponse(null,false,'Failed');
 
   res.json(response);
+});
+
+//stripe function
+app.post('/stripeCustomer', async (req, res) => {
+  let customerBody = req.body;
+  let stripeResponse = await createStripeCustomer(customerBody);
+  (stripeResponse?.id) ? res.json(stripeResponse?.id) : res.json(null);
 });
 
 
@@ -312,6 +320,29 @@ async function insertIdIntoTable(tableName, columnName, value) {
         return { data: combinedData };
 
 }
+
+
+
+
+///////////////////////////////**helper functions *//////////////////////////////////
+// Function to create a customer on Stripe using async/await
+const createStripeCustomer = async (customerData) => {
+  try {
+    const response = await axios.post('https://api.stripe.com/v1/customers', customerData, {
+      headers: {
+        'Authorization': `Bearer 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`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      throw error.response.data;
+    } else {
+      throw error.message;
+    }
+  }
+};
 
 
 
