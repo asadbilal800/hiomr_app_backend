@@ -5,7 +5,9 @@ const BaseReponse = require('./shared/BaseResponse');
 const mysql = require('mysql2/promise');
 const { Connector } = require('@google-cloud/cloud-sql-connector');
 const bodyParser = require('body-parser');
-const {generateUUID} =  require('./shared')
+const {generateUUID} =  require('./shared');
+const stripe = require('stripe')('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');
+
 
 
 
