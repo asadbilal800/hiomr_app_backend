@@ -89,11 +89,15 @@ app.post('/patientInfo', async (req, res) => {
   res.json(response);
 });
 
-//stripe function
 app.post('/stripeCustomer', async (req, res) => {
   let customerBody = req.body;
+  let practiceId = customerBody?.practiceid;
   let stripeResponse = await createStripeCustomer(customerBody);
-  (stripeResponse?.id) ? res.json(stripeResponse?.id) : res.json(null);
+  if(stripeResponse?.id) {
+    if(practiceId) updateIntoTable('Practices','customerid',stripeResponse?.id,`practiceid = '${practiceId}'`);
+    res.json(stripeResponse?.id);
+  }
+  else res.json(null);
 });
 
 
@@ -222,6 +226,17 @@ async function insertIdIntoTable(tableName, columnName, value) {
   }
 }
 
+async function updateIntoTable(tableName, columnName, value, whereClause) {
+  try {
+    const updateQuery = 'UPDATE ' + tableName + ' SET ' + columnName + ' = ? WHERE ' + whereClause;
+    await conn.execute(updateQuery, [value]);
+  }
+  catch(err){
+    console.log(err);
+  }
+}
+
+
   async function savePatient(payload) {
 
     let patientId = generateUUID();
@@ -327,6 +342,7 @@ async function insertIdIntoTable(tableName, columnName, value) {
 // Function to create a customer on Stripe using async/await
 const createStripeCustomer = async (customerData) => {
   try {
+    if(customerData?.practiceid) delete customerData.practiceid;
     const response = await axios.post('https://api.stripe.com/v1/customers', customerData, {
       headers: {
         'Authorization': `Bearer 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`,
