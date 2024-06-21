@@ -100,6 +100,13 @@ app.post('/stripeCustomer', async (req, res) => {
   else res.json(null);
 });
 
+app.post('/setupIntentStripe', async (req, res) => {
+  let body = req.body;
+  let stripeResponse = await createStripeIntentCall(body);
+  let Finalresponse = new BaseReponse(stripeResponse,true,'Success');
+  res.json(Finalresponse);
+});
+
 
 
 
@@ -357,6 +364,16 @@ const createStripeCustomer = async (customerData) => {
       throw error.message;
     }
   }
+};
+
+const createStripeIntentCall = async (body) => {
+    const response = await axios.post('https://api.stripe.com/v1/setup_intents', body, {
+      headers: {
+        'Authorization': `Bearer rk_test_51DbxG7EkvGHbgUsIxH0YqmCCkZ9GYm9hdFRZWZPxN5tLutB37XVHwpHQwpvrrTXoaz0Rob38PMdVtC7HWLgzTCHE004ctwLfLH`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+    return response.data;
 };
 
 
