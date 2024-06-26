@@ -107,6 +107,13 @@ app.post('/setupIntentStripe', async (req, res) => {
   res.json(Finalresponse);
 });
 
+app.get('/updatePaymentBit', async (req, res) => {
+  let practiceId = req.query.practiceId;
+  updateIntoTable('Practices','payment',1,`practiceid = '${practiceId}'`);
+  let Finalresponse = new BaseReponse(stripeResponse,true,'Success');
+  res.json(Finalresponse);
+});
+
 
 
 
