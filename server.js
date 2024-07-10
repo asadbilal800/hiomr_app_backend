@@ -114,6 +114,14 @@ app.get('/updatePaymentBit', async (req, res) => {
   res.json(Finalresponse);
 });
 
+//save patient info 
+app.get('/callCaptcha', async (req, res) => {
+  let token = req.query.token;
+  let captchaResult =  await callCaptchaFunc(token);
+  let Finalresponse = new BaseReponse(captchaResult,true,'Success');
+  res.json(Finalresponse);
+});
+
 
 
 
@@ -384,4 +392,27 @@ const createStripeIntentCall = async (body) => {
 };
 
 
+const callCaptchaFunc = async (token) => {
+  const secret = '6LcnQWMeAAAAAO96ppUEGXshg1UeKMNht-hEMCTe';
+  const recaptchaBody = {
+    secret: secret,
+    response: token
+  };
+
+  try {
+    const response = await axios.post(
+      'https://www.google.com/recaptcha/api/siteverify',
+      new URLSearchParams(Object.entries(recaptchaBody)).toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      }
+    );
+    return response.data.success;
+  } catch (error) {
+    console.error('Error making the HTTP call:', error);
+    throw error;
+  }
+};
 
