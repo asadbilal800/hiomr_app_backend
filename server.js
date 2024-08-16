@@ -107,7 +107,12 @@ app.post('/setupIntentStripe', async (req, res) => {
   res.json(Finalresponse);
 });
 
-app.get('/updatePaymentBit', async (req, res) => {
+app.get('/updatePayment', async (req, res) => {
+  let intentId = req.query.intentId;
+  if(intentId) {
+    let setupIntent = await fetchSetupIntent(intentId);
+    if(setupIntent?.Id) await makePayment(setupIntent.paymentMethod,setupIntent.customer)
+  }
   let practiceId = req.query.practiceId;
   updateIntoTable('Practices','payment',1,`practiceid = '${practiceId}'`);
   let Finalresponse = new BaseReponse(stripeResponse,true,'Success');
@@ -367,7 +372,7 @@ const createStripeCustomer = async (customerData) => {
     if(customerData?.practiceid) delete customerData.practiceid;
     const response = await axios.post('https://api.stripe.com/v1/customers', customerData, {
       headers: {
-        'Authorization': `Bearer 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`,
+        'Authorization': `Bearer rk_test_51DbxG7EkvGHbgUsIxH0YqmCCkZ9GYm9hdFRZWZPxN5tLutB37XVHwpHQwpvrrTXoaz0Rob38PMdVtC7HWLgzTCHE004ctwLfLH`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
     });
@@ -388,7 +393,7 @@ const createStripeIntentCall = async (body) => {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
     });
-    return response.data;
+      return response.data;
 };
 
 
@@ -415,4 +420,43 @@ const callCaptchaFunc = async (token) => {
     throw error;
   }
 };
+
+  const makePayment = async (paymentMethod,customer) => {
+    try {
+      const paymentIntentData = {
+        amount: 5000, 
+        currency: 'usd',
+        customer: customer,
+        payment_method: paymentMethod,
+        off_session: true, 
+        confirm: true
+      };
+      
+      const response = await axios.post('https://api.stripe.com/v1/payment_intents', paymentIntentData, {
+        headers: {
+          'Authorization': `Bearer rk_test_51DbxG7EkvGHbgUsIxH0YqmCCkZ9GYm9hdFRZWZPxN5tLutB37XVHwpHQwpvrrTXoaz0Rob38PMdVtC7HWLgzTCHE004ctwLfLH`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
+      console.log(response.data);
+    } catch (error) {
+      if (error.response) {
+        console.error('Error Response:', error.response.data); // Logs specific error data
+        throw error.response.data;
+      } else {
+        console.error('Error Message:', error.message); // Logs error message
+        throw error.message;
+      }
+    }
+  };
+
+  const fetchSetupIntent = async (Id) => {
+    const response = await axios.get(`https://api.stripe.com/v1/setup_intents/${Id}`, {
+      headers: {
+        'Authorization': `Bearer rk_test_51DbxG7EkvGHbgUsIxH0YqmCCkZ9GYm9hdFRZWZPxN5tLutB37XVHwpHQwpvrrTXoaz0Rob38PMdVtC7HWLgzTCHE004ctwLfLH`,
+      },
+    });
+    return response ?? {}
+  };
+
 
