@@ -107,6 +107,13 @@ app.post('/setupIntentStripe', async (req, res) => {
   res.json(Finalresponse);
 });
 
+app.get('/fetchSetupIntent', async (req, res) => {
+  let Id = req.intentId;
+  let setupIntent = await fetchSetupIntent(Id);
+  let Finalresponse = new BaseReponse(setupIntent,true,'Success');
+  res.json(Finalresponse);
+});
+
 app.get('/updatePayment', async (req, res) => {
   let intentId = req.query.intentId;
   if(intentId) {
