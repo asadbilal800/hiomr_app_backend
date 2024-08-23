@@ -119,6 +119,21 @@ app.get('/updatePayment', async (req, res) => {
   res.json(Finalresponse);
 });
 
+app.get('/makePayment', async (req, res) => {
+  let intentId = req.query.intentId;
+  let responseOfPaymentIntent;
+    let setupIntent = await fetchSetupIntent(intentId);
+    if(setupIntent?.Id) responseOfPaymentIntent = await makePayment(setupIntent.paymentMethod,setupIntent.customer);
+    if(responseOfPaymentIntent?.data?.status == 'requires_payment_method' || responseOfPaymentIntent?.data?.status == 'failed'){
+      let Finalresponse = new BaseReponse({},false,'Success');
+      res.json(Finalresponse);
+    }
+    else {
+      let Finalresponse = new BaseReponse({},true,'Success');
+      res.json(Finalresponse);
+    }
+});
+
 //save patient info 
 app.get('/callCaptcha', async (req, res) => {
   let token = req.query.token;
@@ -158,7 +173,7 @@ async function checkEmailExists(email) {
 
       // Query to fetch data related to the practice
       const [practiceRows] = await conn.execute(
-        `SELECT Doctors.doctorid, Doctors.firstname, Doctors.lastname, Practices.practicename, Practices.practiceid, Practices.payment, Practices.billingemail
+        `SELECT Doctors.doctorid, Doctors.firstname, Doctors.lastname, Practices.practicename, Practices.practiceid, Practices.payment, Practices.billingemail,Practices.paymentmethodid
          FROM Practices
          INNER JOIN Doctors ON Doctors.practiceid = Practices.practiceid
          WHERE Practices.practiceid = ?`, [practiceId]);
@@ -438,7 +453,7 @@ const callCaptchaFunc = async (token) => {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       });
-      console.log(response.data);
+      return response.data;
     } catch (error) {
       if (error.response) {
         console.error('Error Response:', error.response.data); // Logs specific error data
