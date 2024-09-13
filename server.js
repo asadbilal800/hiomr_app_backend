@@ -7,7 +7,30 @@ const { Connector } = require('@google-cloud/cloud-sql-connector');
 const bodyParser = require('body-parser');
 const {generateUUID} =  require('./shared');
 const axios = require('axios');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 
+// Create the /images directory if it doesn't exist
+const imagesDir = path.join(__dirname, 'images');
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir);
+}
+
+// Set up multer storage configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, imagesDir);
+  },
+  filename: (req, file, cb) => {
+    const originalName = file.originalname.split('.')[0]; // Get the name without extension
+    const extension = path.extname(file.originalname); // Get the extension
+    const newFilename = `${originalName}${extension}`;
+    cb(null, newFilename);
+  }
+});
+
+const upload = multer({ storage: storage });
 
 
 
@@ -73,6 +96,13 @@ app.post('/saveRegistration', async (req, res) => {
   response = new BaseReponse(null,false,'Failed');
 
   res.json(response);
+});
+
+//check match practice from db
+app.post('/uploadFiles',upload.array('files'), async (req, res) => {
+  let success = req.files?.length ? true: false;
+  response = new BaseReponse(null,success,'Success');
+  res.json(express.response);
 });
 
 //save patient info 
@@ -179,11 +209,16 @@ async function checkEmailExists(email) {
       const practiceId = rows[0].practiceid;
 
       // Query to fetch data related to the practice
-      const [practiceRows] = await conn.execute(
-        `SELECT Doctors.doctorid, Doctors.firstname, Doctors.lastname, Practices.practicename, Practices.practiceid, Practices.payment, Practices.billingemail,Practices.paymentmethodid
-         FROM Practices
-         INNER JOIN Doctors ON Doctors.practiceid = Practices.practiceid
-         WHERE Practices.practiceid = ?`, [practiceId]);
+      // const [practiceRows] = await conn.execute(
+      //   `SELECT Doctors.doctorid, Doctors.firstname, Doctors.lastname, Practices.practicename, Practices.practiceid, Practices.payment, Practices.billingemail,Practices.paymentmethodid
+      //    FROM Practices
+      //    INNER JOIN Doctors ON Doctors.practiceid = Practices.practiceid
+      //    WHERE Practices.practiceid = ?`, [practiceId]);
+       const [practiceRows] = await conn.execute(
+         `SELECT Doctors.doctorid, Doctors.firstname, Doctors.lastname, Practices.practicename, Practices.practiceid, Practices.payment, Practices.billingemail
+          FROM Practices
+          INNER JOIN Doctors ON Doctors.practiceid = Practices.practiceid
+          WHERE Practices.practiceid = ?`, [practiceId]);
       // Return the fetched data
       return practiceRows;
     }
