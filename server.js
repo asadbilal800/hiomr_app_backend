@@ -347,9 +347,8 @@ async function updateIntoTable(tableName, columnName, value, whereClause) {
 
   async function savePatient(payload) {
 
-    let patientId = generateUUID();
     let caseId = generateUUID();
-    insertIdIntoTable('Patients','patientid',patientId)
+    insertIdIntoTable('Patients','patientid',patientInfo.Id)
     insertIdIntoTable('Cases','caseid',caseId);
     let patientPayload = payload.patientInfo;
     let reasonPayload = payload.reasonInfo;
