@@ -10,6 +10,8 @@ const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const {Storage} = require('@google-cloud/storage');
+
 
 // Create the /images directory if it doesn't exist
 const imagesDir = path.join(__dirname, 'images');
@@ -30,7 +32,13 @@ const storage = multer.diskStorage({
   }
 });
 
+const keyFilePath = path.join(__dirname, 'mainframe-312100-f1018c69e912.json');
+
+
 const upload = multer({ storage: storage });
+const _storage = new Storage({
+  keyFilename: keyFilePath,
+});
 
 
 
@@ -48,11 +56,12 @@ app.use(bodyParser.json());
 
 
 // Start the server
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 // start db server
 startDBInstance();
+
 
 
 //event listener server
@@ -98,10 +107,25 @@ app.post('/saveRegistration', async (req, res) => {
   res.json(response);
 });
 
-//check match practice from db
 app.post('/uploadFiles',upload.array('files'), async (req, res) => {
-  let success = req.files?.length ? true: false;
-  response = new BaseReponse(null,success,'Success');
+  let response = new BaseReponse(null,true,'Success');
+  res.json(response);
+});
+
+//make bucket
+app.get('/makeBucket',async (req, res) => {
+  let practiceId = req.query.practiceId;
+  await makeBucketIfNot(practiceId);
+  response = new BaseReponse(null,true,'Success');
+  res.json(express.response);
+});
+
+//upload items bucket
+app.get('/uploadToBucket',async (req, res) => {
+  let practiceId = req.query.practiceId;
+  let patientId = req.query.patientId;
+  await uploadItemsToBucket(practiceId,patientId);
+  response = new BaseReponse(null,true,'Success');
   res.json(express.response);
 });
 
@@ -515,5 +539,58 @@ const callCaptchaFunc = async (token) => {
     });
     return response ?? {}
   };
+
+   const makeBucketIfNot =  async (name) => {
+     try{
+      const [bucket] = await _storage.createBucket(name);
+      console.log('a bucket has been made!',name)
+    } catch (err) {
+      console.error('ERROR:', err);
+    }
+  }
+
+  const uploadItemsToBucket = async (practiceId,patientId) => {
+
+    try {
+      const [bucket] = await _storage.bucket(practiceId).get();
+      const imagesDir = path.join(__dirname, 'images'); 
+      const files = fs.readdirSync(imagesDir);
+
+      const uploadPromises = files.map(file => {
+        const filePath = path.join(imagesDir, file); 
+        const destination = `${patientId}/${file}`; 
+        return bucket.upload(filePath, { destination });
+      });
+      
+      await Promise.all(uploadPromises);
+      console.log('uploaded to bucket.All files');
+      deleteImages();
+      } catch (error) {
+      console.error('Error uploading file to bucket:', error);
+    }
+  }
+
+  const deleteImages = () => {
+    const folderPath = path.join(__dirname, 'images'); // Adjust the path as needed
+
+    fs.readdir(folderPath, (err, files) => {
+    if (err) {
+        console.error('Error reading the directory:', err);
+        return;
+    }
+
+    files.forEach(file => {
+        const filePath = path.join(folderPath, file);
+        
+        fs.unlink(filePath, (err) => {
+            if (err) {
+                console.error(`Error deleting file ${file}:`, err);
+            } else {
+                console.log(`Deleted file: ${file}`);
+            }
+        });
+    });
+});
+}
 
 
