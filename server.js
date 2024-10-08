@@ -541,7 +541,33 @@ const callCaptchaFunc = async (token) => {
 
    const makeBucketIfNot =  async (name) => {
      try{
-      const [bucket] = await _storage.createBucket(name);
+      const [bucket] = await _storage.createBucket(name,{
+        location: 'us-west3', 
+        storageClass: 'STANDARD',
+        iamConfiguration: {
+          uniformBucketLevelAccess: {
+            enabled: true,
+          },
+        },
+        hierarchicalNamespace: {
+          enabled: true,
+        },
+        lifecycle: {
+          rule: [
+            {
+              action: {
+                type: 'SetStorageClass',
+                storageClass: 'ARCHIVE', // Transition to Archive storage class
+              },
+              condition: { age: 6 }, // Transition objects to Archive after 5 days
+            },
+            {
+              action: { type: 'Delete' },
+              condition: { age: 4001 },
+            },
+          ],
+        },
+      });
       console.log('a bucket has been made!',name)
     } catch (err) {
       console.error('ERROR:', err);
