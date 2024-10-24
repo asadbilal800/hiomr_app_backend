@@ -348,7 +348,7 @@ async function updateIntoTable(tableName, columnName, value, whereClause) {
   async function savePatient(payload) {
 
     let caseId = generateUUID();
-    insertIdIntoTable('Patients','patientid',patientInfo.Id)
+    insertIdIntoTable('Patients','patientid',payload.patientInfo.Id)
     insertIdIntoTable('Cases','caseid',caseId);
     let patientPayload = payload.patientInfo;
     let reasonPayload = payload.reasonInfo;
@@ -371,7 +371,7 @@ async function updateIntoTable(tableName, columnName, value, whereClause) {
     patientPayload.internalId,
     patientPayload.birthDate,
     patientPayload.sexType,
-    patientId
+    payload.patientInfo.Id
   ];
     
   try {
@@ -393,7 +393,7 @@ async function updateIntoTable(tableName, columnName, value, whereClause) {
    "submitted = CURRENT_TIMESTAMP() " +
    "WHERE caseid = ?";
    const valuesForRadiologist = [
-     patientId,
+    payload.patientInfo.Id,
      patientage,
      radiologistPayload.radioLogist,
      radiologistPayload.rush,
@@ -428,8 +428,9 @@ async function updateIntoTable(tableName, columnName, value, whereClause) {
     }
     });
 
-    const [patientDoctorData] = await conn.execute('SELECT Patients.firstname, Patients.lastname, Patients.internalid, Patients.dob, Patients.sex, Cases.uploadperson, Cases.caseemail, Cases.submitted, Doctors.firstname AS doctorfirstname, Doctors.lastname AS doctorlastname FROM Patients INNER JOIN Cases ON Patients.patientid = Cases.patientid INNER JOIN Doctors ON Patients.doctorid = Doctors.doctorid WHERE Patients.patientid = "18978e83-7b54-4738-98b4-02c83884ac41"',
-     [patientId]);
+    console.log(payload.patientInfo.Id);
+    const [patientDoctorData] = await conn.execute('SELECT Patients.firstname, Patients.lastname, Patients.internalid, Patients.dob, Patients.sex, Cases.uploadperson, Cases.caseemail, Cases.submitted, Doctors.firstname AS doctorfirstname, Doctors.lastname AS doctorlastname FROM Patients INNER JOIN Cases ON Patients.patientid = Cases.patientid INNER JOIN Doctors ON Patients.doctorid = Doctors.doctorid WHERE Patients.patientid = ?',
+     [payload.patientInfo.Id]);
 
      const [reasonData] = await conn.execute('SELECT WhySubmitted.patdocnotes,WhySubmitted.reason FROM WhySubmitted WHERE WhySubmitted.caseid = ?',
      [caseId]);
